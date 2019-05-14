@@ -16,12 +16,18 @@ $vars = get_defined_vars();
 $strings = [];
 
 foreach( $vars as $name => $value ) {
-    if( stripos( $name, 's_' ) !== 0 ) {
+    if( stripos( $name, 's_' ) !== 0 && $name != 'MANTIS_ERROR' ) {
         continue;
     }
 
-    $string_name = substr( $name, 2 );
-    $strings[$string_name] = $value;
+    if( $name == 'MANTIS_ERROR' ) {
+        foreach( $value as $error_name => $error_value ) {
+            $strings['MANTIS_ERROR_' . $error_name] = $error_value;
+        }
+    } else {
+        $string_name = substr( $name, 2 );
+        $strings[$string_name] = $value;
+    }
 }
 
 $output_file_path = 'strings_english.csv';

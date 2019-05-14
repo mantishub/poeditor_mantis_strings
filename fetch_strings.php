@@ -106,7 +106,11 @@ foreach( $lang_codes as $lang_code ) {
             $value = $english_strings[$term->term];
           }
 
-          $t_output .= '$s_' . $term->term . ' = "' . $value . '";' . "\n";
+          if( stripos( $term->term, 'MANTIS_ERROR_' ) === 0 ) {
+            $t_output .= "\$MANTIS_ERROR['" . substr( $term->term, 13 ) . "'] = " . '"' . $value . '";' . "\n";
+          } else {
+            $t_output .= '$s_' . $term->term . ' = "' . $value . '";' . "\n";
+          }
       }
   
       $t_output .= "\n";
