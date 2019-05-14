@@ -1,16 +1,17 @@
 <?php
 if( $argc < 2 ) {
-    $english_strings_file = dirname( $argc[0] ) . '/strings_english.txt';
+    $strings_file = dirname( $argc[0] ) . '/strings_english.txt';
 } else {
-    $english_strings_file = $argv[1];
+    $strings_file = $argv[1];
 }
 
-if( !file_exists( $english_strings_file ) ) {
-    echo "File '$english_strings_file' not found.\n";
+if( !file_exists( $strings_file ) ) {
+    echo "File '$strings_file' not found.\n";
     exit;
 }
 
-include( realpath( $english_strings_file ) );
+echo "Processing '$strings_file'...\n";
+include( realpath( $strings_file ) );
 
 $vars = get_defined_vars();
 $strings = [];
@@ -30,7 +31,7 @@ foreach( $vars as $name => $value ) {
     }
 }
 
-$output_file_path = 'strings_english.csv';
+$output_file_path = str_replace( '.txt', '.csv', end( explode( '/', $strings_file ) ) );
 if( file_exists( $output_file_path ) ) {
     unlink( $output_file_path );
 }
