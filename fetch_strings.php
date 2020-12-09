@@ -17,12 +17,40 @@ $language_map = [
     'de' => 'strings_german.txt',
     'pt-br' => ['strings_portuguese_brazil.txt', 'strings_portuguese_standard.txt' ],
     'es' => 'strings_spanish.txt',
+    'ru' => 'strings_russian.txt',
+];
+
+$project_map = [
+  260961 => 'HelpdeskPlugin',
+  260729 => 'AuthHubPlugin',
+  260963 => 'ImportUsersPlugin',
+  260965 => 'LiveLinksPlugin',
+  260967 => 'EventLogPlugin',
+  260969 => 'MantisHubPlugin',
+  260971 => 'SlackPlugin',
+  260973 => 'TrimAttachmentsPlugin',
 ];
 
 $api_token_path = $_SERVER['HOME'] . '/.poeditor_api_token';
 $api_token = trim( file_get_contents( $api_token_path ) );
-$project_id = trim( file_get_contents( getcwd() . '/.poeditor_project_id' ) );
 $target_language = 'english';
+
+function get_project_id( $project ) {
+  if( is_numeric( $project ) ) {
+    return $project;
+  }
+
+  global $project_map;
+
+  foreach( $project_map as $t_id => $t_name ) {
+    if( $project == $t_name ) {
+      return $t_id;
+    }
+  }
+
+  echo "Project '$project' not found.\n";
+  exit;
+}
 
 function api( $api, $params ) {
   global $api_token;
@@ -68,54 +96,100 @@ function api( $api, $params ) {
   return $json->result;
 }
 
-$languages = api( 'languages/list', [ 'id' => $project_id ] );
-$lang_codes = ['en'];
-foreach( $languages->languages as $language ) {
-    $lang_codes[] = $language->code;
-}
+function project_download( $project_id ) {
+  global $language_map, $project_map;
 
-$english_strings = [];
+  $t_project_name = $project_map[$project_id];
 
-foreach( $lang_codes as $lang_code ) {
-    echo "Fetching $lang_code...\n";
-    $json = api( 'terms/list', [ 'id' => $project_id, 'language' => $lang_code ] );
+  echo "Fetching strings for project `$t_project_name`\n";
 
-    if( !isset( $language_map[$lang_code] ) ) {
-      echo "Unknown language '$lang_code'.\n";
-      continue;
-    }
+  $languages = api( 'languages/list', [ 'id' => $project_id ] );
+  $lang_codes = ['en'];
+  foreach( $languages->languages as $language ) {
+      $lang_codes[] = $language->code;
+  }
 
-    $output_file_names = $language_map[$lang_code];
-    if( !is_array( $output_file_names ) ) {
-      $output_file_names = array( $output_file_names );
-    }
+  $english_strings = [];
 
-    foreach( $output_file_names as $output_file ) {
-      echo "  Generating $output_file...\n";
-      $t_output = '';
-      $t_output .= "<?php\n";
-      $t_output .= '# Filename: ' . $output_file . "\n";
-      $t_output .= '# POEditor Project ID: ' . $project_id . "\n";
-      $t_output .= '# POEditor Language: ' . $lang_code . "\n";
-      $t_output .= '# Exported on: ' . date( 'c') . "\n\n";
-      foreach( $json->terms as $term ) {
-          $value = $term->translation->content;
-          if( $lang_code == 'en' ) {
-            $english_strings[$term->term] = $term->translation->content;
-          } else if( empty( $value ) ) {
-            $value = $english_strings[$term->term];
-          }
+  foreach( $lang_codes as $lang_code ) {
+      $t_folder = 'output/' . $t_project_name . '/';
 
-          if( stripos( $term->term, 'MANTIS_ERROR_' ) === 0 ) {
-            $t_output .= "\$MANTIS_ERROR['" . substr( $term->term, 13 ) . "'] = " . '"' . $value . '";' . "\n";
-          } else {
-            $t_output .= '$s_' . $term->term . ' = "' . $value . '";' . "\n";
-          }
+      if( !file_exists( $t_folder ) ) {
+          mkdir( $t_folder );
+      }
+
+      # Don't generate english files.
+      if( $lang_code == 'en' ) {
+        $t_folder .= 'en/';
+      }
+
+      if( !file_exists( $t_folder ) ) {
+        mkdir( $t_folder, 0777, true );
+      }
+
+      echo "    $lang_code\n";
+      $json = api( 'terms/list', [ 'id' => $project_id, 'language' => $lang_code ] );
+  
+      if( !isset( $language_map[$lang_code] ) ) {
+        echo "Unknown language '$lang_code'.\n";
+        continue;
       }
   
-      $t_output .= "\n";
-      file_put_contents( $output_file, $t_output );  
-    }
+      $output_file_names = $language_map[$lang_code];
+      if( !is_array( $output_file_names ) ) {
+        $output_file_names = array( $output_file_names );
+      }
+  
+      foreach( $output_file_names as $output_file ) {
+        echo "        $output_file\n";
+        $t_output = '';
+        $t_output .= "<?php\n";
+        $t_output .= '# Filename: ' . $output_file . "\n";
+        $t_output .= '# POEditor Project ID: ' . $project_id . "\n";
+        $t_output .= '# POEditor Language: ' . $lang_code . "\n";
+        $t_output .= '# Exported on: ' . date( 'c') . "\n\n";
+        foreach( $json->terms as $term ) {
+            $value = $term->translation->content;
+            if( $lang_code == 'en' ) {
+              $english_strings[$term->term] = $term->translation->content;
+            } else if( empty( $value ) ) {
+              $value = $english_strings[$term->term];
+            }
+
+            $value = str_replace( '"', '\"', $value );
+  
+            if( stripos( $term->term, 'MANTIS_ERROR_' ) === 0 ) {
+              $t_output .= "\$MANTIS_ERROR['" . substr( $term->term, 13 ) . "'] = " . '"' . $value . '";' . "\n";
+            } else {
+              $t_output .= '$s_' . $term->term . ' = "' . $value . '";' . "\n";
+            }
+        }
+    
+        $t_output .= "\n";
+
+        $t_file_path = $t_folder . $output_file;
+        file_put_contents( $t_file_path, $t_output );
+
+        $t_cmd = "php -l $t_file_path";
+        $t_result = shell_exec( $t_cmd ) . "\n";
+
+        if( strpos( $t_result, 'No syntax errors detected' ) !== false ) {
+            echo "        no syntax errors.\n";
+        } else {
+            echo "        $t_result\n";
+        }
+      }
+  }  
+}
+
+if( $argc >= 2 ) {
+  $project = $argv[1];
+  $t_project_id = get_project_id( $project );
+  project_download( $t_project_id );
+} else {
+  foreach( $project_map as $t_project_id => $t_project_name ) {
+    project_download( $t_project_id );
+  }
 }
 
 echo "\n";
