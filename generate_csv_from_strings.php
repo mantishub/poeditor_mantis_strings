@@ -5,32 +5,40 @@ if( $argc < 2 ) {
 }
 
 $t_projects = [
-    'Helpdesk',
     'AuthHub',
-    'ImportUsers',
-    'LiveLinks',
     'EventLog',
+    'Helpdesk',
+    'ImportUsers',
+    'Kanban',
+    'LiveLinks',
     'MantisHub',
     'Slack',
+    'Teams',
     'TrimAttachments',
   ];
-  
+
 $t_path = rtrim( realpath( trim( $argv[1] ) ), '/' ) . '/';
 
 foreach( $t_projects as $t_project ) {
     $t_english_path = $t_path . 'plugins/' . $t_project . '/lang/strings_english.txt';
     $t_folder = './output/' . $t_project . '/en/';
-    mkdir( $t_folder, 0777, true );
-    generate_csv_for_file( $t_english_path, $t_folder . 'english.csv' );
+    if( !file_exists( $t_folder ) ) {
+        mkdir( $t_folder, 0777, true );
+    }
+
+    generate_csv_for_file( $t_project, $t_english_path, $t_folder . 'english.csv' );
 }
 
-function generate_csv_for_file( $p_strings_file, $p_output_file ) {
+echo "\n";
+
+function generate_csv_for_file( $p_project, $p_strings_file, $p_output_file ) {
+    echo "Processing '$p_project'...\n";
+
     if( !file_exists( $p_strings_file ) ) {
         echo "File '$p_strings_file' not found.\n";
         exit;
     }
 
-    echo "Processing '$p_strings_file'...\n";
     include( $p_strings_file );
 
     $t_vars = get_defined_vars();
