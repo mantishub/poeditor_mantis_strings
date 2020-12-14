@@ -1,14 +1,10 @@
 <?php
-# Export the terms of a project from poeditor.com into Mantis
+# Export the terms of one or more projects from poeditor.com into Mantis
 # string files.
 #
 # Setup
 # - Create `~/.poeditor_api_token` file with content including
 #   the poeditor.com API key.
-# - Create `.poeditor_project_id` with its contents being the
-#   project id of the project to be imported.  This file should
-#   be in the folder where this script will be run from to generate
-#   the string files.
 
 $language_map = [
     'en' => 'strings_english.txt',
@@ -21,14 +17,14 @@ $language_map = [
 ];
 
 $project_map = [
-  260961 => 'HelpdeskPlugin',
-  260729 => 'AuthHubPlugin',
-  260963 => 'ImportUsersPlugin',
-  260965 => 'LiveLinksPlugin',
-  260967 => 'EventLogPlugin',
-  260969 => 'MantisHubPlugin',
-  260971 => 'SlackPlugin',
-  260973 => 'TrimAttachmentsPlugin',
+  260961 => 'Helpdesk',
+  260729 => 'AuthHub',
+  260963 => 'ImportUsers',
+  260965 => 'LiveLinks',
+  260967 => 'EventLog',
+  260969 => 'MantisHub',
+  260971 => 'Slack',
+  260973 => 'TrimAttachments',
 ];
 
 $api_token_path = $_SERVER['HOME'] . '/.poeditor_api_token';
@@ -115,7 +111,7 @@ function project_download( $project_id ) {
       $t_folder = 'output/' . $t_project_name . '/';
 
       if( !file_exists( $t_folder ) ) {
-          mkdir( $t_folder );
+        mkdir( $t_folder, 0777, true );
       }
 
       # Don't generate english files.
@@ -151,7 +147,8 @@ function project_download( $project_id ) {
         foreach( $json->terms as $term ) {
             $value = $term->translation->content;
             if( $lang_code == 'en' ) {
-              $english_strings[$term->term] = $term->translation->content;
+              $value = $term->translation->content;
+              $english_strings[$term->term] = $value;
             } else if( empty( $value ) ) {
               $value = $english_strings[$term->term];
             }
