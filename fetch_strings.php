@@ -17,13 +17,15 @@ $language_map = [
 ];
 
 $project_map = [
-  260961 => 'Helpdesk',
   260729 => 'AuthHub',
+  260967 => 'EventLog',
+  260961 => 'Helpdesk',
+  397505 => 'Kanban',
   260963 => 'ImportUsers',
   260965 => 'LiveLinks',
-  260967 => 'EventLog',
   260969 => 'MantisHub',
   260971 => 'Slack',
+  397509 => 'Teams',
   260973 => 'TrimAttachments',
 ];
 
