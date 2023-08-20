@@ -148,6 +148,8 @@ function project_download( $project_id ) {
         $t_output .= '# Exported on: ' . date( 'c') . "\n\n";
         foreach( $json->terms as $term ) {
             $value = $term->translation->content;
+            #var_dump( $term );
+            #exit;
             if( $lang_code == 'en' ) {
               $value = $term->translation->content;
               $english_strings[$term->term] = $value;
@@ -160,7 +162,13 @@ function project_download( $project_id ) {
             if( stripos( $term->term, 'MANTIS_ERROR_' ) === 0 ) {
               $t_output .= "\$MANTIS_ERROR['" . substr( $term->term, 13 ) . "'] = " . '"' . $value . '";' . "\n";
             } else {
-              $t_output .= '$s_' . $term->term . ' = "' . $value . '";' . "\n";
+              if( str_contains( $value, "'" ) ) {
+                $quote = '"';
+              } else {
+                $quote = "'";
+              }
+
+              $t_output .= '$s_' . $term->term . ' = ' . $quote . $value . $quote . ';' . "\n";
             }
         }
     
